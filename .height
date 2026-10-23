@@ -1,0 +1,107 @@
+-- Create a ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Create a Frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 200, 0, 100)
+frame.Position = UDim2.new(0.5, -100, 0.5, -50)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.BackgroundTransparency = 0.3
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = screenGui
+
+-- Create UICorner for smooth edges
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 10)
+uiCorner.Parent = frame
+
+-- Ensure the frame persists after death or reset
+screenGui.ResetOnSpawn = false
+
+-- Create a TextBox for inputting hip height
+local textBox = Instance.new("TextBox")
+textBox.Size = UDim2.new(0, 180, 0, 40)
+textBox.Position = UDim2.new(0.5, -90, 0.5, -20)
+textBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+textBox.BackgroundTransparency = 0.3
+textBox.BorderSizePixel = 0
+textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+textBox.PlaceholderText = "Enter Hip Height"
+textBox.Font = Enum.Font.SourceSans
+textBox.TextSize = 18
+textBox.Parent = frame
+
+-- Create UICorner for the TextBox
+local textBoxCorner = Instance.new("UICorner")
+textBoxCorner.CornerRadius = UDim.new(0, 10)
+textBoxCorner.Parent = textBox
+
+-- Make the Frame Draggable using TweenService
+local UIS = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
+local dragging
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    local newPosition = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+    frame:TweenPosition(newPosition, Enum.EasingDirection.Out, Enum.EasingStyle.Sine, 0.1, true)
+end
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType.Touch then
+        if dragging then
+            update(input)
+        end
+    end
+end)
+
+UIS.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+-- Function to handle TextBox input and set hip height
+textBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        local hipHeight = tonumber(textBox.Text)
+        if hipHeight then
+            local player = game.Players.LocalPlayer
+            local character = player.Character or player.CharacterAdded:Wait()
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.HipHeight = hipHeight
+                print("Hip Height set to:", hipHeight)
+            else
+                print("Humanoid not found in character.")
+            end
+        else
+            print("Invalid input. Please enter a number.")
+        end
+    end
+end)
